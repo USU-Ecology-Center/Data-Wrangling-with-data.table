@@ -3,7 +3,6 @@
 # data.table Workshop
 # USU Ecology Center student workshop series
 # Michael Stemkovski
-# October 27, 2021
 #
 # - why use data.table
 # - reading in data
@@ -12,6 +11,8 @@
 # - operations on columns
 # - aggregations by groups
 # - a few handy extras
+#
+# You can find this code and other demos here: https://gist.github.com/stemkov
 #
 ###
 
@@ -35,6 +36,9 @@ library(data.table)
 # Lets track how long fread and read.csv each take to read in some data
 data_table_time <-system.time(fread("https://raw.githubusercontent.com/stemkov/pheno_variance/main/clean_data/all_data_standardized.csv"))
 read_csv_time <- system.time(read.csv("https://raw.githubusercontent.com/stemkov/pheno_variance/main/clean_data/all_data_standardized.csv"))
+
+# data_table_time <- system.time(fread("/home/michael/Documents/Grad School/Research Projects/pheno_variance/clean_data/all_data_standardized.csv"))
+# read_csv_time <- system.time(read.csv("/home/michael/Documents/Grad School/Research Projects/pheno_variance/clean_data/all_data_standardized.csv"))
 
 # How much better did fread do?
 paste("fread was", round(read_csv_time[3]/data_table_time[3],1), "times faster than read.csv")
@@ -79,7 +83,7 @@ data[species %in% c("Prunus mume", "Prunus serrulata"),] # two species
 # Say we wanted to get observations of 
 # just first flowering
 # for a plumb species 
-# in the year to 200
+# in the year to 2000
 # at all sites
 data[species == "Prunus mume" & year == 2000 & phenophase == "first_flower",]
 
@@ -108,6 +112,8 @@ data[, coord := paste(lat, lon, sep=", ")]
 data[genus == "Prunus" & year == 2000 & phenophase == "first_flower",
      mean(doy)]
 
+mean(data[genus == "Prunus" & year == 2000 & phenophase == "first_flower",
+     doy])
 
 ### aggregations by groups
 
@@ -131,6 +137,16 @@ summary_data
 # Lets take a look at our summarized data
 plot(mean_doy ~ mean_temp, data=summary_data, pch=20, cex=0.2, ylim=c(0,365), col=as.factor(genus))
 plot(n_sites ~ mean_temp, data=summary_data, pch=20, cex=0.2, col=as.factor(genus))
+
+# Using the by= argument also lets you perform operations much more quickly/efficiently
+data[, genus := gsub(" .*", "", species)]
+data[, genus := gsub(" .*", "", species), by=.(species)]
+# repeats operation 460,000 times
+ungrouped_time <- system.time(data[, genus := gsub(" .*", "", species)]) 
+# repeats operation 2,100 times
+grouped_time <- system.time(data[, genus := gsub(" .*", "", species), by=.(species)]) 
+
+paste("this ran", round(ungrouped_time[3]/grouped_time[3],1), "times faster with grouping")
 
 
 ### a few handy extras
